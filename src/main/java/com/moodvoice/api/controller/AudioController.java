@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/audio")
@@ -84,6 +85,17 @@ public class AudioController {
         } catch (Exception e) {
             System.err.println("Ошибка воспроизведения: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getUserHistory(@RequestParam String email) {
+        try {
+            // Ищем все записи пользователя, отсортированные по дате
+            List<VoiceRecord> records = voiceRecordRepository.findByUserEmailOrderByCreatedAtDesc(email);
+            return ResponseEntity.ok(records);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Ошибка получения истории: " + e.getMessage()));
         }
     }
 }

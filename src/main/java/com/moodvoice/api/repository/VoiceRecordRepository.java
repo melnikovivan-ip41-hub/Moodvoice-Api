@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface VoiceRecordRepository extends JpaRepository<VoiceRecord, Long> {
-    // Этот метод позволит нам найти все записи конкретного пользователя для архива
-    List<VoiceRecord> findByUserEmail(String userEmail);
+    // Магия Spring Data: он сам напишет SQL запрос на основе названия этого метода!
+    List<VoiceRecord> findByUserEmailOrderByCreatedAtDesc(String userEmail);
 }

@@ -19,16 +19,29 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerAnonymous(@RequestBody AuthRequest request) {
-        // Перевіряємо, чи не зайнятий імейл
+        
+        // 1. Блок валидации домена почты
+        String email = request.getEmail().toLowerCase(); // Переводим в нижний регистр для надежности
+        if (!email.endsWith("@gmail.com") && 
+            !email.endsWith("@ukr.net") && 
+            !email.endsWith("@kpi.ua") && 
+            !email.endsWith("@student.kpi.ua")) {
+            
+            return ResponseEntity.badRequest().body(Map.of(
+                "message", "Дозволені лише пошти @gmail.com, @ukr.net, @kpi.ua", 
+                "status", "error"
+            ));
+        }
+
+        // 2. Перевіряємо, чи не зайнятий імейл
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            // Використовуємо Map.of для автоматичного створення JSON
             return ResponseEntity.badRequest().body(Map.of(
                 "message", "Email вже зайнятий", 
                 "status", "error"
             ));
         }
 
-        // Зберігаємо в базу
+        // 3. Зберігаємо в базу
         User newUser = new User(request.getEmail(), request.getPassword());
         userRepository.save(newUser);
         

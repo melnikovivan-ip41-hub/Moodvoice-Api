@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -14,13 +15,17 @@ import java.util.Optional;
 public class AuthController {
 
     @Autowired
-    private UserRepository userRepository; // Автоматичне підключення бази
+    private UserRepository userRepository;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerAnonymous(@RequestBody AuthRequest request) {
+    public ResponseEntity<Map<String, String>> registerAnonymous(@RequestBody AuthRequest request) {
         // Перевіряємо, чи не зайнятий імейл
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("{\"message\": \"Email вже зайнятий\", \"status\": \"error\"}");
+            // Використовуємо Map.of для автоматичного створення JSON
+            return ResponseEntity.badRequest().body(Map.of(
+                "message", "Email вже зайнятий", 
+                "status", "error"
+            ));
         }
 
         // Зберігаємо в базу
@@ -28,23 +33,31 @@ public class AuthController {
         userRepository.save(newUser);
         
         System.out.println("User saved to DB: " + request.getEmail());
-        return ResponseEntity.ok("{\"message\": \"Успішна реєстрація\", \"status\": \"success\"}");
+        return ResponseEntity.ok(Map.of(
+            "message", "Успішна реєстрація", 
+            "status", "success"
+        ));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody AuthRequest request) {
         Optional<User> user = userRepository.findByEmail(request.getEmail());
 
         if (user.isPresent() && user.get().getPassword().equals(request.getPassword())) {
             System.out.println("Login success: " + request.getEmail());
-            return ResponseEntity.ok("{\"message\": \"Вхід успішний\", \"status\": \"success\"}");
+            return ResponseEntity.ok(Map.of(
+                "message", "Вхід успішний", 
+                "status", "success"
+            ));
         } else {
-            return ResponseEntity.status(401).body("{\"message\": \"Невірні дані\", \"status\": \"error\"}");
+            return ResponseEntity.status(401).body(Map.of(
+                "message", "Невірні дані", 
+                "status", "error"
+            ));
         }
     }
 }
 
-// Клас AuthRequest залишається тут же внизу, як у тебе було
 class AuthRequest {
     private String email;
     private String password;

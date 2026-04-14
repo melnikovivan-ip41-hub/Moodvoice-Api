@@ -20,16 +20,16 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerAnonymous(@RequestBody AuthRequest request) {
         
-        // 1. ПЕРЕВІРКА ПОШТИ (Тільки літери, цифри, крапка, мінус, підкреслення + дозволені домени)
+        // 1. ПЕРЕВІРКА ПОШТИ (Спецсимволи, довжина від 6 до 30 до @, дозволені домени)
         String email = request.getEmail().toLowerCase();
-        if (!email.matches("^[a-z0-9._-]+@(gmail\\.com|ukr\\.net|kpi\\.ua|student\\.kpi\\.ua)$")) {
+        if (!email.matches("^[a-z0-9._-]{6,30}@(gmail\\.com|ukr\\.net|kpi\\.ua|student\\.kpi\\.ua)$")) {
             return ResponseEntity.badRequest().body(Map.of(
-                "message", "Невірний формат пошти або заборонені спецсимволи. Дозволені лише літери, цифри та домени @gmail.com, @ukr.net, @kpi.ua", 
+                "message", "Невірний формат пошти. Логін (до @) має бути від 6 до 30 символів. Дозволені домени: @gmail.com, @ukr.net, @kpi.ua", 
                 "status", "error"
             ));
         }
 
-        // 2. ПЕРЕВІРКА ПАРОЛЯ НА СПЕЦСИМВОЛИ (Тільки літери від A-Z та цифри 0-9)
+        // 2. ПЕРЕВІРКА ПАРОЛЯ НА СПЕЦСИМВОЛИ
         String password = request.getPassword();
         if (!password.matches("^[a-zA-Z0-9]+$")) {
             return ResponseEntity.badRequest().body(Map.of(

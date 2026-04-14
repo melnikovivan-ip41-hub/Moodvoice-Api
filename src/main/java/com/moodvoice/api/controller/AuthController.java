@@ -20,20 +20,25 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerAnonymous(@RequestBody AuthRequest request) {
         
-        // 1. Блок валидации домена почты
-        String email = request.getEmail().toLowerCase(); // Переводим в нижний регистр для надежности
-        if (!email.endsWith("@gmail.com") && 
-            !email.endsWith("@ukr.net") && 
-            !email.endsWith("@kpi.ua") && 
-            !email.endsWith("@student.kpi.ua")) {
-            
+        // 1. ПЕРЕВІРКА ПОШТИ (Тільки літери, цифри, крапка, мінус, підкреслення + дозволені домени)
+        String email = request.getEmail().toLowerCase();
+        if (!email.matches("^[a-z0-9._-]+@(gmail\\.com|ukr\\.net|kpi\\.ua|student\\.kpi\\.ua)$")) {
             return ResponseEntity.badRequest().body(Map.of(
-                "message", "Дозволені лише пошти @gmail.com, @ukr.net, @kpi.ua", 
+                "message", "Невірний формат пошти або заборонені спецсимволи. Дозволені лише літери, цифри та домени @gmail.com, @ukr.net, @kpi.ua", 
                 "status", "error"
             ));
         }
 
-        // 2. Перевіряємо, чи не зайнятий імейл
+        // 2. ПЕРЕВІРКА ПАРОЛЯ НА СПЕЦСИМВОЛИ (Тільки літери від A-Z та цифри 0-9)
+        String password = request.getPassword();
+        if (!password.matches("^[a-zA-Z0-9]+$")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "message", "Пароль не повинен містити спецсимволів (лише англійські літери та цифри).", 
+                "status", "error"
+            ));
+        }
+
+        // 3. Перевіряємо, чи не зайнятий імейл
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of(
                 "message", "Email вже зайнятий", 
@@ -41,7 +46,7 @@ public class AuthController {
             ));
         }
 
-        // 3. Зберігаємо в базу
+        // 4. Зберігаємо в базу
         User newUser = new User(request.getEmail(), request.getPassword());
         userRepository.save(newUser);
         

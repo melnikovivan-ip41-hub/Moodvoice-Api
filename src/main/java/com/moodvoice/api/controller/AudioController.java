@@ -36,22 +36,36 @@ public class AudioController {
         }
 
         try {
-            // 1. Генерируем уникальное имя файла, чтобы они не перезаписывали друг друга
             String uniqueFileName = UUID.randomUUID().toString() + ".webm";
-            
-            // 2. Определяем путь сохранения (в папку проекта)
             String currentDirectory = System.getProperty("user.dir");
             Path filePath = Paths.get(currentDirectory, uniqueFileName);
             
-            // 3. ФИЗИЧЕСКОЕ СОХРАНЕНИЕ НА ДИСК
+            // 1. Фізичне збереження
             file.transferTo(filePath.toFile());
 
-            // 4. СОХРАНЕНИЕ В БАЗУ ДАННЫХ (используем твой новый класс)
+            // --- 2. ІМІТАЦІЯ РОБОТИ AI (MOCK SERVICE) ---
+            String[] transcriptions = {
+                "Сьогодні був довгий день, але я відчуваю спокій. Вдалося завершити важливий проєкт на роботі.",
+                "Трохи турбуюсь через завтрашню пару, треба ще раз перечитати конспект.",
+                "Сьогодні сталося щось чудове! Здав лабораторну роботу на максимальний бал, настрій супер!",
+                "Просто звичайний день. Багато рутини, але загалом все стабільно і добре."
+            };
+            String[] moods = {"Спокій", "Тривога", "Радість", "Баланс"};
+            
+            // Вибираємо випадковий текст і настрій
+            int randomIndex = (int) (Math.random() * transcriptions.length);
+            String aiText = transcriptions[randomIndex];
+            String aiMood = moods[randomIndex];
+            // ----------------------------------------------
+
+            // 3. Збереження в базу (додаємо згенеровані дані ІІ)
             VoiceRecord record = new VoiceRecord(email, filePath.toString(), file.getSize());
+            record.setTranscription(aiText);
+            record.setMoodType(aiMood);
             voiceRecordRepository.save(record);
 
             return ResponseEntity.ok(Map.of(
-                "message", "Запись сохранена в базу и на диск!",
+                "message", "Аудіо проаналізовано та збережено!",
                 "status", "success",
                 "recordId", record.getId().toString()
             ));

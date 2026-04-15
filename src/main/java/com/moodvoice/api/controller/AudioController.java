@@ -11,12 +11,13 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 
-
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/audio")
@@ -110,6 +111,35 @@ public class AudioController {
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Ошибка получения истории: " + e.getMessage()));
+        }
+    }
+
+    // === МЕТОД ДЛЯ УДАЛЕНИЯ ЗАПИСИ ===
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteAudio(@PathVariable Long id) {
+        try {
+            // 1. Находим запись в базе данных
+            VoiceRecord record = voiceRecordRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Запис не знайдено"));
+
+            // 2. Находим физический файл на диске и удаляем его
+            Path filePath = Paths.get(record.getFilePath());
+            Files.deleteIfExists(filePath);
+
+            // 3. Удаляем строку с метаданными из базы (PostgreSQL)
+            voiceRecordRepository.delete(record);
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success", 
+                "message", "Запис успішно видалено"
+            ));
+
+        } catch (Exception e) {
+            System.err.println("Помилка видалення: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of(
+                "status", "error", 
+                "message", e.getMessage()
+            ));
         }
     }
 }

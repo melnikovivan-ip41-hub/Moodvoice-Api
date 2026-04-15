@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.UUID;
 import java.util.List;
 
 
@@ -39,7 +38,8 @@ public class AudioController {
         try {
             // 1. ВІДПРАВЛЯЄМО ФАЙЛ У CLOUDINARY
             // Cloudinary сприймає файли .webm як "video", тому обов'язково вказуємо resource_type
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), 
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), 
                     ObjectUtils.asMap("resource_type", "video"));
             
             // 2. ОТРИМУЄМО ПОСИЛАННЯ НА ФАЙЛ З ХМАРИ

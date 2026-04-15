@@ -1,5 +1,7 @@
 package com.moodvoice.api.controller;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.moodvoice.api.entity.VoiceRecord;
 import com.moodvoice.api.repository.VoiceRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import java.util.UUID;
 import java.util.List;
 
 
+
 @RestController
 @RequestMapping("/api/audio")
 @CrossOrigin(origins = "*")
@@ -27,24 +30,22 @@ public class AudioController {
     @Autowired
     private VoiceRecordRepository voiceRecordRepository;
 
+    @Autowired
+    private Cloudinary cloudinary;
+
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, String>> uploadAudio(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("email") String email) { // Добавили email, чтобы знать чей файл
-
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Файл пустой", "status", "error"));
-        }
-
+    public ResponseEntity<?> uploadAudio(@RequestParam("file") MultipartFile file, 
+                                         @RequestParam("email") String email) {
         try {
-            String uniqueFileName = UUID.randomUUID().toString() + ".webm";
-            String currentDirectory = System.getProperty("user.dir");
-            Path filePath = Paths.get(currentDirectory, uniqueFileName);
+            // 1. ВІДПРАВЛЯЄМО ФАЙЛ У CLOUDINARY
+            // Cloudinary сприймає файли .webm як "video", тому обов'язково вказуємо resource_type
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), 
+                    ObjectUtils.asMap("resource_type", "video"));
             
-            // 1. Фізичне збереження
-            file.transferTo(filePath.toFile());
+            // 2. ОТРИМУЄМО ПОСИЛАННЯ НА ФАЙЛ З ХМАРИ
+            String cloudUrl = uploadResult.get("secure_url").toString();
 
-            // --- 2. ІМІТАЦІЯ РОБОТИ AI (MOCK SERVICE) ---
+            // --- 3. ІМІТАЦІЯ РОБОТИ AI (MOCK SERVICE) ---
             String[] transcriptions = {
                 "Сьогодні був довгий день, але я відчуваю спокій. Вдалося завершити важливий проєкт на роботі.",
                 "Трохи турбуюсь через завтрашню пару, треба ще раз перечитати конспект.",
@@ -53,26 +54,29 @@ public class AudioController {
             };
             String[] moods = {"Спокій", "Тривога", "Радість", "Баланс"};
             
-            // Вибираємо випадковий текст і настрій
             int randomIndex = (int) (Math.random() * transcriptions.length);
             String aiText = transcriptions[randomIndex];
             String aiMood = moods[randomIndex];
             // ----------------------------------------------
 
-            // 3. Збереження в базу (додаємо згенеровані дані ІІ)
-            VoiceRecord record = new VoiceRecord(email, filePath.toString(), file.getSize());
+            // 4. ЗБЕРЕЖЕННЯ В БАЗУ ДАНИХ (тепер зберігаємо ПОСИЛАННЯ cloudUrl, а не шлях на диску)
+            VoiceRecord record = new VoiceRecord(email, cloudUrl, file.getSize());
             record.setTranscription(aiText);
             record.setMoodType(aiMood);
             voiceRecordRepository.save(record);
 
             return ResponseEntity.ok(Map.of(
-                "message", "Аудіо проаналізовано та збережено!",
+                "message", "Аудіо збережено в хмару!",
                 "status", "success",
                 "recordId", record.getId().toString()
             ));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage(), "status", "error"));
+            System.err.println("Помилка завантаження: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of(
+                "message", "Помилка сервера: " + e.getMessage(),
+                "status", "error"
+            ));
         }
     }
 
